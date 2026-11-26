@@ -1,30 +1,47 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import 'package:smart_er_demo/main.dart';
+import 'package:smart_er_demo/widgets/route_map.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  // Tests can't download map tiles.
+  setUp(() => RouteMap.tilesEnabled = false);
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+  testWidgets('App starts on Trip Search', (WidgetTester tester) async {
+    await tester.pumpWidget(const SmartERApp());
     await tester.pump();
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('Trip Search'), findsOneWidget);
+    expect(find.text('Find a ride'), findsOneWidget);
+    expect(find.text('Post a ride'), findsOneWidget);
+    expect(find.text('Track my own trip'), findsOneWidget);
+  });
+
+  testWidgets('Rider view shows the handshake pop-up on connect',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(const SmartERApp());
+    await tester.pump();
+
+    await tester.tap(find.text('Find a ride'));
+    // The searching spinner never stops, so pump fixed amounts of time
+    // instead of pumpAndSettle.
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('Looking for Alex M.'), findsOneWidget);
+
+    await tester.scrollUntilVisible(find.text('Simulate connection'), 200,
+        scrollable: find
+            .descendant(
+                of: find.byType(ListView), matching: find.byType(Scrollable))
+            .first);
+    await tester.tap(find.text('Simulate connection'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('Handshake complete'), findsOneWidget);
+    expect(find.text('Trip verified and logged'), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 6));
   });
 }
